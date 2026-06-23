@@ -5,22 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Startup Cash Flow Projector</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
-/* ── Reset & Base ── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;color:#1a1a2e;line-height:1.5;-webkit-text-size-adjust:100%}
-
-/* ── Header ── */
 .header{background:linear-gradient(135deg,#1B2A4A,#2D5F8A);color:#fff;padding:16px 20px}
 .header h1{font-size:20px;font-weight:700}
 .header p{font-size:12px;opacity:.8;margin-top:2px}
 @media(min-width:768px){.header{padding:20px 24px}.header h1{font-size:24px}}
 
-/* ── Layout ── */
 .container{max-width:1400px;margin:0 auto;padding:12px}
 @media(min-width:768px){.container{padding:16px}}
 
-/* ── Card ── */
 .card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:12px;overflow:hidden}
 .card-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;font-weight:600;font-size:14px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .card-header .toggle{font-size:11px;opacity:.5;transition:transform .2s}
@@ -37,7 +34,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .param-group input:focus{outline:none;border-color:#2D5F8A;box-shadow:0 0 0 2px rgba(45,95,138,.15)}
 @media(min-width:768px){.params{grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}}
 
-/* ── Table Wrapper (horizontal scroll on mobile) ── */
+/* ── Table ── */
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
 @media(min-width:768px){.table-scroll{margin:0;padding:0}}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
@@ -49,7 +46,6 @@ td input[type=number]{text-align:right;-moz-appearance:textfield}
 td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 @media(min-width:768px){table{font-size:13px}th{padding:6px 8px}td{padding:4px 6px}td input,td select{padding:4px 6px}}
 
-/* ── Seasonal / Custom grids ── */
 .seasonal-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:2px;margin-top:3px}
 .seasonal-grid input{width:100%;padding:3px 2px;font-size:10px;text-align:center;border:1px solid #d0d5dd;border-radius:3px;min-height:24px}
 .custom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:2px;margin-top:3px}
@@ -57,12 +53,10 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 .month-label{font-size:8px;color:#999;text-align:center;line-height:1}
 @media(min-width:768px){.seasonal-grid input,.custom-grid input{font-size:11px;min-height:28px}.month-label{font-size:9px}}
 
-/* ── Color headers ── */
 .bg-inc th{background:#219653;color:#fff}
 .bg-fixed th{background:#E67E22;color:#fff}
 .bg-var th{background:#D35400;color:#fff}
 
-/* ── Buttons ── */
 .btn-add{background:none;border:1px dashed #ccc;color:#888;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:12px;margin-top:8px;width:100%;-webkit-tap-highlight-color:transparent}
 .btn-add:hover,.btn-add:active{border-color:#2D5F8A;color:#2D5F8A}
 .btn-del{background:none;border:none;color:#e74c3c;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;border-radius:4px;-webkit-tap-highlight-color:transparent}
@@ -75,7 +69,10 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 .btn-calc:active{background:#1B2A4A}
 .btn-reset{background:#fff;color:#666;border:1px solid #d0d5dd;padding:10px 16px;border-radius:8px;cursor:pointer;font-size:13px;min-height:44px;-webkit-tap-highlight-color:transparent}
 .btn-reset:active{background:#f8f9fa}
-@media(min-width:768px){.action-bar{padding:12px 16px}.btn-calc{flex:none;min-height:auto}}
+.btn-pdf{background:#C0392B;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;flex:1;min-height:44px;-webkit-tap-highlight-color:transparent}
+.btn-pdf:active{background:#922B21}
+.btn-pdf.loading{opacity:.6;pointer-events:none}
+@media(min-width:768px){.action-bar{padding:12px 16px}.btn-calc,.btn-pdf{flex:none;min-height:auto}}
 
 /* ── Stats ── */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -95,7 +92,6 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 .chart-tab:active{transform:scale(.97)}
 .chart-tab.active{background:#2D5F8A;color:#fff;border-color:#2D5F8A}
 @media(min-width:768px){.chart-tab{padding:10px 18px;font-size:13px;min-height:auto}}
-
 .chart-panel{display:none}
 .chart-panel.active{display:block}
 .chart-box{background:#fff;border-radius:10px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
@@ -110,10 +106,31 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 .scenario-best{color:#E67E22;font-weight:600}
 .scenario-worst{color:#E74C3C;font-weight:600}
 
-/* ── Misc ── */
 .text-muted{color:#999;font-size:11px}
-.mt-8{margin-top:8px}
-.hidden{display:none!important}
+
+/* ── PDF Toast ── */
+.pdf-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1B2A4A;color:#fff;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
+.pdf-toast.show{opacity:1}
+
+/* ── Print Styles ── */
+@media print{
+  body{background:#fff!important}
+  .btn-add,.btn-del,.btn-calc,.btn-reset,.btn-pdf,.chart-tabs,.card-header .toggle,.action-bar{display:none!important}
+  .card{box-shadow:none!important;border:1px solid #ddd!important;break-inside:avoid;page-break-inside:avoid}
+  .card-body{display:block!important}
+  .collapsed>.card-body{display:block!important}
+  .chart-panel{display:block!important}
+  .chart-tab,.chart-panel.active{display:block!important}
+  .chart-box canvas{max-height:200px!important}
+  .stats{grid-template-columns:repeat(3,1fr)!important}
+  .param-group input{border:none!important;background:none!important;padding:2px 4px!important;min-height:auto!important}
+  td input,td select{border:none!important;background:none!important;padding:2px!important;min-height:auto!important}
+  .seasonal-grid input,.custom-grid input{border:none!important;background:none!important;padding:2px!important;min-height:auto!important}
+  .hidden{display:block!important}
+  .table-scroll{overflow:visible!important}
+  .data-table-wrap{max-height:none!important;overflow:visible!important}
+  @page{margin:12mm}
+}
 </style>
 </head>
 <body>
@@ -227,6 +244,7 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 <div class="card">
   <div class="action-bar">
     <button class="btn-calc" onclick="calculate()">🔄 Update</button>
+    <button class="btn-pdf" id="pdfBtn" onclick="downloadPDF()">📄 Download PDF</button>
     <button class="btn-reset" onclick="resetExample()">↺ Reset</button>
   </div>
 </div>
@@ -244,16 +262,18 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
       <div class="chart-tab active" data-tab="tab0" onclick="switchTab('tab0')">💰 Cash Balance</div>
       <div class="chart-tab" data-tab="tab1" onclick="switchTab('tab1')">📈 Income Detail</div>
       <div class="chart-tab" data-tab="tab2" onclick="switchTab('tab2')">🏢 Fixed Costs</div>
-      <div class="chart-tab" data-tab="tab3" onclick="switchTab('tab3')">📊 Variable Costs</div>
+      <div class="chart-tab" data-tab="tab3" onclick="switchTab('tab3')">📊 Var Costs</div>
       <div class="chart-tab" data-tab="tab4" onclick="switchTab('tab4')">📊 Inc vs Costs</div>
       <div class="chart-tab" data-tab="tab5" onclick="switchTab('tab5')">💸 Net+Balance</div>
     </div>
-    <div class="chart-panel active" id="tab0"><div class="chart-box"><h3>💰 Cash Balance — 3 Scenarios</h3><canvas id="ch0"></canvas></div></div>
-    <div class="chart-panel" id="tab1"><div class="chart-box"><h3>📈 Income Streams Detail</h3><canvas id="ch1"></canvas></div></div>
-    <div class="chart-panel" id="tab2"><div class="chart-box"><h3>🏢 Fixed Costs Detail</h3><canvas id="ch2"></canvas></div></div>
-    <div class="chart-panel" id="tab3"><div class="chart-box"><h3>📊 Variable Costs Detail</h3><canvas id="ch3"></canvas></div></div>
-    <div class="chart-panel" id="tab4"><div class="chart-box"><h3>📊 Income vs Costs</h3><canvas id="ch4"></canvas></div></div>
-    <div class="chart-panel" id="tab5"><div class="chart-box"><h3>💸 Net Cash Flow &amp; Cash Balance</h3><canvas id="ch5"></canvas></div></div>
+    <div id="pdfChartCapture" style="position:relative">
+      <div class="chart-panel active" id="tab0"><div class="chart-box"><h3>💰 Cash Balance — 3 Scenarios</h3><canvas id="ch0"></canvas></div></div>
+      <div class="chart-panel" id="tab1"><div class="chart-box"><h3>📈 Income Streams Detail</h3><canvas id="ch1"></canvas></div></div>
+      <div class="chart-panel" id="tab2"><div class="chart-box"><h3>🏢 Fixed Costs Detail</h3><canvas id="ch2"></canvas></div></div>
+      <div class="chart-panel" id="tab3"><div class="chart-box"><h3>📊 Variable Costs Detail</h3><canvas id="ch3"></canvas></div></div>
+      <div class="chart-panel" id="tab4"><div class="chart-box"><h3>📊 Income vs Costs</h3><canvas id="ch4"></canvas></div></div>
+      <div class="chart-panel" id="tab5"><div class="chart-box"><h3>💸 Net Cash Flow &amp; Cash Balance</h3><canvas id="ch5"></canvas></div></div>
+    </div>
   </div>
 </div>
 
@@ -269,9 +289,11 @@ td input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:
 
 </div><!-- /container -->
 
+<div class="pdf-toast" id="pdfToast">📄 Generating PDF…</div>
+
 <script>
 // ═════════════════════════════════════════════════════════════════════════════
-//  STATE & DEFAULTS
+//  STATE
 // ═════════════════════════════════════════════════════════════════════════════
 
 const MONTHS_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -291,9 +313,8 @@ function toggleCard(el){
 function switchTab(id){
   document.querySelectorAll('.chart-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
   document.querySelectorAll('.chart-panel').forEach(p=>p.classList.toggle('active',p.id===id));
-  // Trigger resize so chart re-renders to fill the now-visible container
   const canvas=document.querySelector('#'+id+' canvas');
-  if(canvas){const ch=canvas.chart;if(ch){ch.resize();}}
+  if(canvas){const ch=canvas.chart;if(ch){setTimeout(()=>ch.resize(),50);}}
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -324,7 +345,7 @@ function applyGrowth(base,months,type,params){
 function applyRateGrowth(base,months,type,params){return applyGrowth(base,months,type,params);}
 
 // ═════════════════════════════════════════════════════════════════════════════
-//  ROW MANAGEMENT
+//  ROWS
 // ═════════════════════════════════════════════════════════════════════════════
 
 function ls(key,fallback){try{return JSON.parse(localStorage.getItem('cf_'+key))||fallback;}catch(e){return fallback;}}
@@ -353,9 +374,7 @@ let fixedData=ls('fixed',DEFAULT_FIXED);
 let varData=ls('var',DEFAULT_VAR);
 
 function saveState(){ss('income',incomeData);ss('fixed',fixedData);ss('var',varData);}
-
 function renderAllRows(){renderIncomeRows();renderFixedRows();renderVarRows();}
-
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function rowHTML(item,idx,cat){
@@ -364,14 +383,12 @@ function rowHTML(item,idx,cat){
   const custV=gt==='custom'?'':'hidden';
   const rateV=(gt==='constant'||gt==='random_range'||gt==='seasonal')?'':'hidden';
   const maxV=gt==='random_range'?'':'hidden';
-
   let seasHTML=`<div class="seasonal-grid ${seasV}" id="seas-${cat}-${idx}">`;
   for(let m=0;m<12;m++){
     const val=(item.multipliers&&item.multipliers[m]!=null)?item.multipliers[m]:1.0;
     seasHTML+=`<div><div class="month-label">${MONTHS_SHORT[m]}</div><input type="number" step="0.01" value="${val}" onchange="updSeas('${cat}',${idx},${m},this.value)" onblur="autoCalc()"></div>`;
   }
   seasHTML+=`</div>`;
-
   const months=getDuration();
   let custHTML=`<div class="custom-grid ${custV}" id="cust-${cat}-${idx}">`;
   for(let m=0;m<Math.max(months-1,1);m++){
@@ -380,7 +397,6 @@ function rowHTML(item,idx,cat){
     if((m+1)%12===0&&m+1<months-1)custHTML+=`</div><div class="custom-grid ${custV}" style="margin-top:2px">`;
   }
   custHTML+=`</div>`;
-
   return `
     <td>${idx+1}</td>
     <td><input type="text" value="${escapeHtml(item.name)}" placeholder="Name" onchange="updF('${cat}',${idx},'name',this.value)" onblur="autoCalc()"></td>
@@ -392,53 +408,24 @@ function rowHTML(item,idx,cat){
     </td>
     <td class="${rateV}"><input type="number" step="0.1" value="${item.rate||0}" onchange="updF('${cat}',${idx},'rate',parseFloat(this.value))" onblur="autoCalc()" style="width:55px"></td>
     <td class="${maxV}"><input type="number" step="0.1" value="${item.max_rate||0}" onchange="updF('${cat}',${idx},'max_rate',parseFloat(this.value))" onblur="autoCalc()" style="width:55px"></td>
-    <td style="min-width:360px;text-align:left">
-      ${seasHTML}
-      ${custHTML}
-    </td>
-    <td><button class="btn-del" onclick="remove${idx<0?'':cat.charAt(0).toUpperCase()+cat.slice(1)}(${idx})">×</button></td>
+    <td style="min-width:360px;text-align:left">${seasHTML}${custHTML}</td>
+    <td><button class="btn-del" onclick="remove${cat.charAt(0).toUpperCase()+cat.slice(1)}(${idx})">×</button></td>
   `;
 }
 
-function updF(cat,idx,field,val){
-  const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;
-  arr[idx][field]=val;saveState();
-}
-function updSeas(cat,idx,m,val){
-  const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;
-  if(!arr[idx].multipliers)arr[idx].multipliers=[];
-  arr[idx].multipliers[m]=parseFloat(val);saveState();
-}
-function updCust(cat,idx,m,val){
-  const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;
-  if(!arr[idx].custom_rates)arr[idx].custom_rates=[];
-  arr[idx].custom_rates[m]=parseFloat(val);saveState();
-}
-function chgGT(cat,idx,type){
-  const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;
-  arr[idx].type=type;renderAllRows();saveState();autoCalc();
-}
-
+function updF(cat,idx,field,val){const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;arr[idx][field]=val;saveState();}
+function updSeas(cat,idx,m,val){const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;if(!arr[idx].multipliers)arr[idx].multipliers=[];arr[idx].multipliers[m]=parseFloat(val);saveState();}
+function updCust(cat,idx,m,val){const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;if(!arr[idx].custom_rates)arr[idx].custom_rates=[];arr[idx].custom_rates[m]=parseFloat(val);saveState();}
+function chgGT(cat,idx,type){const arr=cat==='income'?incomeData:cat==='fixed'?fixedData:varData;arr[idx].type=type;renderAllRows();saveState();autoCalc();}
 function addIncome(){incomeData.push({name:'',start:10000,type:'constant',rate:5,max_rate:0,multipliers:[],custom_rates:[]});renderIncomeRows();saveState();autoCalc();}
 function addFixed(){fixedData.push({name:'',start:5000,type:'constant',rate:3,max_rate:0,multipliers:[],custom_rates:[]});renderFixedRows();saveState();autoCalc();}
 function addVar(){varData.push({name:'',start:5,type:'constant',rate:0,max_rate:0,multipliers:[],custom_rates:[]});renderVarRows();saveState();autoCalc();}
 function removeIncome(idx){incomeData.splice(idx,1);renderIncomeRows();saveState();autoCalc();}
 function removeFixed(idx){fixedData.splice(idx,1);renderFixedRows();saveState();autoCalc();}
 function removeVar(idx){varData.splice(idx,1);renderVarRows();saveState();autoCalc();}
-
-function renderIncomeRows(){
-  const tbody=document.getElementById('incomeRows');tbody.innerHTML='';
-  incomeData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'income');tbody.appendChild(tr);});
-}
-function renderFixedRows(){
-  const tbody=document.getElementById('fixedRows');tbody.innerHTML='';
-  fixedData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'fixed');tbody.appendChild(tr);});
-}
-function renderVarRows(){
-  const tbody=document.getElementById('varRows');tbody.innerHTML='';
-  varData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'var');tbody.appendChild(tr);});
-}
-
+function renderIncomeRows(){const tbody=document.getElementById('incomeRows');tbody.innerHTML='';incomeData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'income');tbody.appendChild(tr);});}
+function renderFixedRows(){const tbody=document.getElementById('fixedRows');tbody.innerHTML='';fixedData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'fixed');tbody.appendChild(tr);});}
+function renderVarRows(){const tbody=document.getElementById('varRows');tbody.innerHTML='';varData.forEach((item,idx)=>{const tr=document.createElement('tr');tr.innerHTML=rowHTML(item,idx,'var');tbody.appendChild(tr);});}
 function getDuration(){return Math.max(1,Math.min(MAX_DURATION,parseInt(document.getElementById('duration').value)||12));}
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -450,52 +437,21 @@ function calculate(){
   const opening=parseFloat(document.getElementById('openingBal').value)||0;
   const bestF=(parseFloat(document.getElementById('bestFactor').value)||0)/100;
   const worstF=(parseFloat(document.getElementById('worstFactor').value)||0)/100;
-
   let sv=document.getElementById('startDate').value;
   if(!sv){const d=new Date();d.setDate(1);sv=d.toISOString().slice(0,10);}
   const sd=new Date(sv+'T00:00:00');
   const labels=[];
   for(let m=0;m<months;m++){const d=new Date(sd.getFullYear(),sd.getMonth()+m,1);labels.push(MONTHS_SHORT[d.getMonth()]+' '+d.getFullYear());}
-
-  // Income
   const incV=[],incA=[];
-  incomeData.forEach(item=>{
-    const a=item.name&&item.name.trim()!=='';
-    incA.push(a);
-    if(a)incV.push(applyGrowth(item.start,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]}));
-    else incV.push(Array(months).fill(0));
-  });
-  const tInc=Array(months).fill(0);
-  incV.forEach(s=>{s.forEach((v,m)=>{tInc[m]+=v;});});
-
-  // Fixed
-  const fixV=[];
-  fixedData.forEach(item=>{
-    if(item.name&&item.name.trim()!=='')fixV.push(applyGrowth(item.start,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]}));
-    else fixV.push(Array(months).fill(0));
-  });
-  const tFix=Array(months).fill(0);
-  fixV.forEach(s=>{s.forEach((v,m)=>{tFix[m]+=v;});});
-
-  // Variable
-  const varV=[];
-  varData.forEach(item=>{
-    if(item.name&&item.name.trim()!==''){
-      const rates=applyRateGrowth(item.start||0,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]});
-      const vals=Array(months).fill(0);
-      tInc.forEach((rev,m)=>{vals[m]=Math.round(rev*rates[m]/100*100)/100;});
-      varV.push(vals);
-    }else varV.push(Array(months).fill(0));
-  });
-  const tVar=Array(months).fill(0);
-  varV.forEach(s=>{s.forEach((v,m)=>{tVar[m]+=v;});});
-
-  const tCost=tFix.map((v,m)=>v+tVar[m]);
-  const net=tInc.map((v,m)=>v-tCost[m]);
-
+  incomeData.forEach(item=>{const a=item.name&&item.name.trim()!=='';incA.push(a);if(a)incV.push(applyGrowth(item.start,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]}));else incV.push(Array(months).fill(0));});
+  const tInc=Array(months).fill(0);incV.forEach(s=>{s.forEach((v,m)=>{tInc[m]+=v;});});
+  const fixV=[];fixedData.forEach(item=>{if(item.name&&item.name.trim()!=='')fixV.push(applyGrowth(item.start,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]}));else fixV.push(Array(months).fill(0));});
+  const tFix=Array(months).fill(0);fixV.forEach(s=>{s.forEach((v,m)=>{tFix[m]+=v;});});
+  const varV=[];varData.forEach(item=>{if(item.name&&item.name.trim()!==''){const rates=applyRateGrowth(item.start||0,months,item.type||'constant',{rate:item.rate||0,min_rate:item.rate||0,max_rate:item.max_rate||0,base_rate:item.rate||0,multipliers:item.multipliers||Array(12).fill(1),custom_rates:item.custom_rates||[]});const vals=Array(months).fill(0);tInc.forEach((rev,m)=>{vals[m]=Math.round(rev*rates[m]/100*100)/100;});varV.push(vals);}else varV.push(Array(months).fill(0));});
+  const tVar=Array(months).fill(0);varV.forEach(s=>{s.forEach((v,m)=>{tVar[m]+=v;});});
+  const tCost=tFix.map((v,m)=>v+tVar[m]);const net=tInc.map((v,m)=>v-tCost[m]);
   const cn=[],cb=[],cw=[];let c=opening,cl=opening,cw2=opening;
   for(let m=0;m<months;m++){c+=net[m];cn.push(Math.round(c*100)/100);cl+=net[m]*(1+bestF);cb.push(Math.round(cl*100)/100);cw2+=net[m]*(1-worstF);cw.push(Math.round(cw2*100)/100);}
-
   renderStats(tInc,tCost,net,cn,cb,cw,opening);
   renderDataTable(labels,incV,incA,fixV,varV,tInc,tFix,tVar,tCost,net,cn,cb,cw,months);
   renderCharts(labels,incV,incA,incomeData,fixV,fixedData,varV,varData,tInc,tCost,net,cn,cb,cw);
@@ -557,65 +513,169 @@ function renderDataTable(labels,incV,incA,fixV,varV,tInc,tFix,tVar,tCost,net,cn,
 
 function renderCharts(labels,incV,incA,incMeta,fixV,fixMeta,varV,varMeta,tInc,tCost,net,cn,cb,cw){
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});charts={};
-
   function build(id,cfg){
     const el=document.getElementById(id);
     if(!el)return;
     el.chart=charts[id]=new Chart(el.getContext('2d'),cfg);
   }
-
-  build('ch0',{
-    type:'line',
-    data:{labels,datasets:[
-      {label:'Normal',data:cn,borderColor:'#27AE60',backgroundColor:'rgba(39,174,96,.08)',fill:true,tension:.3,pointRadius:2},
-      {label:'Best Case',data:cb,borderColor:'#E67E22',backgroundColor:'transparent',borderDash:[6,3],tension:.3,pointRadius:2},
-      {label:'Worst Case',data:cw,borderColor:'#E74C3C',backgroundColor:'transparent',borderDash:[6,3],tension:.3,pointRadius:2},
-    ]},
-    options:co()
-  });
-
+  build('ch0',{type:'line',data:{labels,datasets:[
+    {label:'Normal',data:cn,borderColor:'#27AE60',backgroundColor:'rgba(39,174,96,.08)',fill:true,tension:.3,pointRadius:2},
+    {label:'Best Case',data:cb,borderColor:'#E67E22',backgroundColor:'transparent',borderDash:[6,3],tension:.3,pointRadius:2},
+    {label:'Worst Case',data:cw,borderColor:'#E74C3C',backgroundColor:'transparent',borderDash:[6,3],tension:.3,pointRadius:2},
+  ]},options:co()});
   const ds2=[];incV.forEach((s,i)=>{if(incA[i])ds2.push({label:incMeta[i].name,data:s,borderColor:INC_COLORS[i%INC_COLORS.length],backgroundColor:'transparent',tension:.3,pointRadius:1,borderWidth:2});});
   build('ch1',{type:'line',data:{labels,datasets:ds2},options:co()});
-
   const ds3=[];fixV.forEach((s,i)=>{if(fixMeta[i]&&fixMeta[i].name)ds3.push({label:fixMeta[i].name,data:s,borderColor:FIX_COLORS[i%FIX_COLORS.length],backgroundColor:'transparent',tension:.3,pointRadius:1,borderWidth:2});});
   build('ch2',{type:'line',data:{labels,datasets:ds3},options:co()});
-
   const ds4=[];varV.forEach((s,i)=>{if(varMeta[i]&&varMeta[i].name)ds4.push({label:varMeta[i].name,data:s,borderColor:VAR_COLORS[i%VAR_COLORS.length],backgroundColor:'transparent',tension:.3,pointRadius:1,borderWidth:2});});
   build('ch3',{type:'line',data:{labels,datasets:ds4},options:co()});
-
-  build('ch4',{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'Total Income',data:tInc,backgroundColor:'rgba(39,174,96,.7)',borderRadius:3},
-      {label:'Total Costs',data:tCost,backgroundColor:'rgba(231,76,60,.7)',borderRadius:3},
-    ]},
-    options:{...co(),scales:{
-      x:{ticks:{maxTicksLimit:12,font:{size:10}}},
-      y:{beginAtZero:true,ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'K':v),font:{size:10}}}
-    }}
-  });
-
-  build('ch5',{
-    type:'line',
-    data:{labels,datasets:[
-      {label:'Net Cash Flow',data:net,borderColor:'#2D5F8A',backgroundColor:'rgba(45,95,138,.08)',fill:true,tension:.3,pointRadius:2,borderWidth:2},
-      {label:'Cash Balance',data:cn,borderColor:'#27AE60',backgroundColor:'transparent',tension:.3,pointRadius:2,borderWidth:3},
-    ]},
-    options:co()
-  });
+  build('ch4',{type:'bar',data:{labels,datasets:[
+    {label:'Total Income',data:tInc,backgroundColor:'rgba(39,174,96,.7)',borderRadius:3},
+    {label:'Total Costs',data:tCost,backgroundColor:'rgba(231,76,60,.7)',borderRadius:3},
+  ]},options:{...co(),scales:{x:{ticks:{maxTicksLimit:12,font:{size:10}}},y:{beginAtZero:true,ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'K':v),font:{size:10}}}}}});
+  build('ch5',{type:'line',data:{labels,datasets:[
+    {label:'Net Cash Flow',data:net,borderColor:'#2D5F8A',backgroundColor:'rgba(45,95,138,.08)',fill:true,tension:.3,pointRadius:2,borderWidth:2},
+    {label:'Cash Balance',data:cn,borderColor:'#27AE60',backgroundColor:'transparent',tension:.3,pointRadius:2,borderWidth:3},
+  ]},options:co()});
 }
+function co(){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12,padding:8}}},scales:{x:{ticks:{maxTicksLimit:12,font:{size:10}}},y:{ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'K':v),font:{size:10}}}}};}
 
-function co(){
-  return {
-    responsive:true,maintainAspectRatio:false,
-    plugins:{
-      legend:{position:'bottom',labels:{font:{size:10},boxWidth:12,padding:8}}
-    },
-    scales:{
-      x:{ticks:{maxTicksLimit:12,font:{size:10}}},
-      y:{ticks:{callback:v=>'$'+(v>=1000?(v/1000).toFixed(0)+'K':v),font:{size:10}}}
+// ═════════════════════════════════════════════════════════════════════════════
+//  PDF DOWNLOAD
+// ═════════════════════════════════════════════════════════════════════════════
+
+async function downloadPDF(){
+  const btn=document.getElementById('pdfBtn');
+  const toast=document.getElementById('pdfToast');
+  btn.classList.add('loading');btn.textContent='⏳ Generating…';
+  toast.classList.add('show');
+  try{
+    const projName=document.getElementById('projName').value||'Cash Flow Projection';
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF('p','mm','a4');
+    const pw=210,ph=297;
+    const margin=14;
+    const contentW=pw-margin*2;
+    let y=margin;
+
+    // ── Title ──
+    pdf.setFontSize(20).setFont(undefined,'bold').text('🚀 '+projName, margin, y);
+    y+=7;
+    pdf.setFontSize(11).setFont(undefined,'normal').text('Cash Flow Projection Report', margin, y);
+    y+=5;
+    pdf.setFontSize(9).setTextColor(100).text('Generated: '+new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}), margin, y);
+    y+=10;
+
+    // ── Helper: capture element as image ──
+    async function capture(el,opt={}){
+      // Make sure element is visible for capture
+      const origDisplay=el.style.display;
+      if(opt.forceShow)el.style.display='block';
+      const canvas=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false,width:el.scrollWidth,height:el.scrollHeight});
+      if(opt.forceShow)el.style.display=origDisplay;
+      return canvas;
     }
-  };
+
+    // ── 1. Capture stats bar ──
+    const statsEl=document.getElementById('statsBar');
+    if(statsEl){
+      const sCanvas=await capture(statsEl);
+      const sImg=sCanvas.toDataURL('image/png');
+      const sH=contentW*sCanvas.height/sCanvas.width;
+      if(y+sH>ph-margin){pdf.addPage();y=margin;}
+      pdf.addImage(sImg,'PNG',margin,y,contentW,Math.min(sH,40));
+      y+=Math.min(sH,40)+6;
+    }
+
+    // ── 2. Capture each chart tab ──
+    const tabIds=['tab0','tab1','tab2','tab3','tab4','tab5'];
+    const tabLabels=['Cash Balance — 3 Scenarios','Income Streams Detail','Fixed Costs Detail','Variable Costs Detail','Income vs Costs','Net Cash Flow & Cash Balance'];
+
+    for(let i=0;i<tabIds.length;i++){
+      // Switch to this tab so chart canvas is visible
+      switchTab(tabIds[i]);
+      await new Promise(r=>setTimeout(r,200)); // let chart resize
+
+      const panel=document.getElementById(tabIds[i]);
+      if(!panel)continue;
+      const box=panel.querySelector('.chart-box');
+      if(!box)continue;
+      const canvasEl=panel.querySelector('canvas');
+      if(!canvasEl||!canvasEl.chart)continue;
+
+      // Capture the chart box
+      const cCanvas=await capture(box);
+      const cImg=cCanvas.toDataURL('image/png');
+      const cH=contentW*cCanvas.height/cCanvas.width;
+
+      // Check if we need a new page
+      if(y+cH+6>ph-margin){pdf.addPage();y=margin;}
+
+      // Small title for each chart
+      pdf.setFontSize(10).setFont(undefined,'bold').setTextColor(44);
+      pdf.text(tabLabels[i], margin, y);
+      y+=4;
+
+      pdf.addImage(cImg,'PNG',margin,y,contentW,Math.min(cH,80));
+      y+=Math.min(cH,80)+6;
+    }
+
+    // ── 3. Capture summary data table ──
+    const tableWrap=document.getElementById('dataTableWrap');
+    if(tableWrap&&tableWrap.innerHTML.trim()){
+      const tCanvas=await capture(tableWrap,{forceShow:true});
+      const tImg=tCanvas.toDataURL('image/png');
+      const tH=contentW*tCanvas.height/tCanvas.width;
+
+      if(y+14>ph-margin){pdf.addPage();y=margin;}
+      pdf.setFontSize(12).setFont(undefined,'bold').setTextColor(44);
+      pdf.text('📈 Full Projection Data', margin, y);
+      y+=8;
+
+      // We might need multiple pages for the data table
+      let remainingH=tH;
+      let srcY=0;
+      while(remainingH>0){
+        const pageH=ph-margin-y-5;
+        const sliceH=Math.min(pageH,remainingH);
+        const ratio=sliceH/tH;
+        // Calculate source height proportion
+        const srcSliceH=tCanvas.height*ratio;
+        // Create a temporary canvas for the slice
+        const sliceCanvas=document.createElement('canvas');
+        sliceCanvas.width=tCanvas.width;
+        sliceCanvas.height=srcSliceH;
+        const ctx=sliceCanvas.getContext('2d');
+        ctx.drawImage(tCanvas,0,srcY,tCanvas.width,srcSliceH,0,0,tCanvas.width,srcSliceH);
+        const sliceImg=sliceCanvas.toDataURL('image/png');
+        pdf.addImage(sliceImg,'PNG',margin,y,contentW,sliceH);
+        y+=sliceH+3;
+        remainingH-=sliceH;
+        srcY+=srcSliceH;
+        if(remainingH>0){pdf.addPage();y=margin;}
+      }
+    }
+
+    // ── Footer on every page ──
+    const pageCount=pdf.internal.getNumberOfPages();
+    for(let i=1;i<=pageCount;i++){
+      pdf.setPage(i);
+      pdf.setFontSize(8).setTextColor(180);
+      pdf.text('Startup Cash Flow Projector — jthkaiagent.github.io/cashflow-projector', margin, ph-8);
+      pdf.text('Page '+i+' of '+pageCount, pw-margin-20, ph-8);
+    }
+
+    // ── Save ──
+    pdf.save(projName.replace(/[^a-zA-Z0-9]/g,'_')+'_Cashflow.pdf');
+    toast.textContent='✅ PDF downloaded!';
+    setTimeout(()=>toast.classList.remove('show'),2000);
+  }catch(e){
+    console.error('PDF error:',e);
+    toast.textContent='❌ PDF failed: '+e.message;
+    setTimeout(()=>toast.classList.remove('show'),3000);
+  }finally{
+    btn.classList.remove('loading');btn.textContent='📄 Download PDF';
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
