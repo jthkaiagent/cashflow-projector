@@ -204,10 +204,10 @@ th.del-col{width:40px;min-width:40px;border-left:1px solid rgba(255,255,255,.25)
             <th style="width:28px">#</th>
             <th style="min-width:110px">Name</th>
             <th style="width:90px">Start ($)</th>
-            <th style="width:100px">Growth Type</th>
-            <th style="width:60px">Rate%</th>
-            <th style="width:60px">Max%</th>
-            <th style="min-width:360px">Seasonal ×12 / Custom Rates</th>
+            <th style="min-width:130px">Growth Type</th>
+            <th style="width:48px">R%</th>
+            <th style="width:48px">Mx</th>
+            <th style="min-width:300px">Seasonal ×12 / Custom Rates</th>
             <th class="del-col"></th>
           </tr>
         </thead>
@@ -229,10 +229,10 @@ th.del-col{width:40px;min-width:40px;border-left:1px solid rgba(255,255,255,.25)
             <th style="width:28px">#</th>
             <th style="min-width:110px">Name</th>
             <th style="width:90px">Monthly ($)</th>
-            <th style="width:100px">Growth Type</th>
-            <th style="width:60px">Rate%</th>
-            <th style="width:60px">Max%</th>
-            <th style="min-width:360px">Seasonal ×12 / Custom Rates</th>
+            <th style="min-width:130px">Growth Type</th>
+            <th style="width:48px">R%</th>
+            <th style="width:48px">Mx</th>
+            <th style="min-width:300px">Seasonal ×12 / Custom Rates</th>
             <th class="del-col"></th>
           </tr>
         </thead>
@@ -254,10 +254,10 @@ th.del-col{width:40px;min-width:40px;border-left:1px solid rgba(255,255,255,.25)
             <th style="width:28px">#</th>
             <th style="min-width:110px">Name</th>
             <th style="width:90px">Base Rate%</th>
-            <th style="width:100px">Growth Type</th>
-            <th style="width:60px">Rate%</th>
-            <th style="width:60px">Max%</th>
-            <th style="min-width:360px">Seasonal ×12 / Custom Rates</th>
+            <th style="min-width:130px">Growth Type</th>
+            <th style="width:48px">R%</th>
+            <th style="width:48px">Mx</th>
+            <th style="min-width:300px">Seasonal ×12 / Custom Rates</th>
             <th class="del-col"></th>
           </tr>
         </thead>
@@ -630,19 +630,18 @@ function rowHTML(item,idx,cat){
   const gt=item.t||'constant';
   const showSeas=gt==='seasonal';
   const showCust=gt==='custom';
-  const showRate=gt==='constant'||gt==='random_range'||gt==='seasonal';
-  const showMax=gt==='random_range';
-  const showGrid=showSeas||showCust;
+  const showRange=gt==='random_range';
 
   // Seasonal grid: always init to 12 values
   if(!item.ml||item.ml.length===0){item.ml=Array(12).fill(1);}
   let seasHTML='';
   if(showSeas){
-    seasHTML=`<div class="growth-grid-wrap"><div class="growth-grid-label">📅 Seasonal Multipliers (×12, Jan→Dec): base × (1+rate%) × multiplier</div><div class="growth-grid">`;
+    seasHTML=`<div class="growth-grid-wrap"><div class="growth-grid-label">📅 12-month seasonal multipliers</div><div class="growth-grid">`;
     for(let m=0;m<12;m++){
       seasHTML+=`<div><div class="gl">${MS[m]}</div><input type="number" step="0.01" value="${item.ml[m]}" onchange="uS('${cat}',${idx},${m},this.value)" onblur="autoCalc()"></div>`;
     }
-    seasHTML+=`</div></div>`;
+    seasHTML+=`</div>
+      <div style="font-size:10px;color:#888;margin-top:3px">Base rate: <b>${item.r||0}%</b> → prev × (1+${item.r||0}%) × multiplier</div></div>`;
   }
 
   // Custom grid
@@ -650,24 +649,33 @@ function rowHTML(item,idx,cat){
   if(!item.cr)item.cr=[];
   let custHTML='';
   if(showCust){
-    custHTML=`<div class="growth-grid-wrap"><div class="growth-grid-label">📋 Custom Monthly Rates (%): prev × (1 + rate%/100)</div><div class="growth-grid" style="grid-template-columns:repeat(auto-fill,minmax(40px,1fr))">`;
+    custHTML=`<div class="growth-grid-wrap"><div class="growth-grid-label">📋 Custom rates (% per month)</div><div class="growth-grid" style="grid-template-columns:repeat(auto-fill,minmax(36px,1fr))">`;
     for(let m=0;m<Math.max(months-1,1);m++){
       const val=(item.cr&&item.cr[m]!=null)?item.cr[m]:0;
       custHTML+=`<div><div class="gl">M${m+1}</div><input type="number" step="0.1" value="${val}" onchange="uC('${cat}',${idx},${m},this.value)" onblur="autoCalc()"></div>`;
-      if((m+1)%12===0&&m+1<months-1)custHTML+=`</div><div class="growth-grid" style="grid-template-columns:repeat(auto-fill,minmax(40px,1fr))">`;
+      if((m+1)%12===0&&m+1<months-1)custHTML+=`</div><div class="growth-grid" style="grid-template-columns:repeat(auto-fill,minmax(36px,1fr))">`;
     }
     custHTML+=`</div></div>`;
   }
 
-  const showGridStyle=showGrid?'':' style="display:none"';
+  // For non-seasonal/non-custom types, show a dash
+  let gridContent='<span style="color:#ccc;font-size:11px">—</span>';
+  if(showSeas)gridContent=seasHTML;
+  if(showCust)gridContent=custHTML;
+
+  // For constant type: inline rate in the dropdown cell
+  let gtCell=`<select onchange="cGT('${cat}',${idx},this.value)" onblur="autoCalc()" style="width:100%">${GT.map(t=>`<option value="${t}" ${t===gt?'selected':''}>${t}</option>`).join('')}</select>`;
+  if(gt==='constant'){
+    gtCell+=` <span style="font-size:11px;color:#888">@</span> <input type="number" step="0.1" value="${item.r||0}" onchange="uF('${cat}',${idx},'r',parseFloat(this.value))" onblur="autoCalc()" style="width:44px;padding:3px 2px;font-size:11px;text-align:right"> <span style="font-size:10px;color:#888">%</span>`;
+  }
 
   return `<td>${idx+1}</td>
     <td><input type="text" value="${esc(item.n)}" placeholder="Name" onchange="uF('${cat}',${idx},'n',this.value)" onblur="autoCalc()"></td>
     <td><input type="number" value="${item.s}" onchange="uF('${cat}',${idx},'s',parseFloat(this.value))" onblur="autoCalc()"></td>
-    <td><select onchange="cGT('${cat}',${idx},this.value)" onblur="autoCalc()">${GT.map(t=>`<option value="${t}" ${t===gt?'selected':''}>${t}</option>`).join('')}</select></td>
-    <td${showRate?'':' style="display:none"'}><input type="number" step="0.1" value="${item.r||0}" onchange="uF('${cat}',${idx},'r',parseFloat(this.value))" onblur="autoCalc()" style="width:55px"></td>
-    <td${showMax?'':' style="display:none"'}><input type="number" step="0.1" value="${item.mx||0}" onchange="uF('${cat}',${idx},'mx',parseFloat(this.value))" onblur="autoCalc()" style="width:55px"></td>
-    <td${showGridStyle} style="min-width:360px;text-align:left">${seasHTML}${custHTML}</td>
+    <td style="white-space:nowrap">${gtCell}</td>
+    <td${showRange?'':' style="display:none"'}><input type="number" step="0.1" value="${item.r||0}" placeholder="Min" onchange="uF('${cat}',${idx},'r',parseFloat(this.value))" onblur="autoCalc()" style="width:48px;padding:3px 2px;font-size:11px;text-align:right" title="Min rate %"></td>
+    <td${showRange?'':' style="display:none"'}><input type="number" step="0.1" value="${item.mx||0}" placeholder="Max" onchange="uF('${cat}',${idx},'mx',parseFloat(this.value))" onblur="autoCalc()" style="width:48px;padding:3px 2px;font-size:11px;text-align:right" title="Max rate %"></td>
+    <td style="min-width:300px;text-align:left">${gridContent}</td>
     <td style="border-left:1px solid #e8e8e8"><button class="btn-del" onclick="confirmRemove('${cat}',${idx})">×</button></td>`;
 }
 
